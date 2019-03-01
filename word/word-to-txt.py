@@ -19,7 +19,7 @@ with open(file_name, 'w') as fileout:
             # Open the word
             #text = textract.process(path)
             # extract text
-            text = docx2txt.process("file.docx")
+            text = docx2txt.process(path)
             # Get file name without extension
             ff = os.path.splitext(f)[0]
             # write to file
