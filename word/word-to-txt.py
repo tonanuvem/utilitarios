@@ -1,9 +1,10 @@
 from openpyxl import load_workbook
-import textract
+#import textract
+import docx2txt
 import os
 
 # Directory for files
-file_dir = 'C:\\Users\\Andre\\Dropbox\\Andre\\IR\\2018 ano base\\Charliana\\recibosreferenteaosatendimentosde2018' # "."
+file_dir = "."
 # Caracter separador de colunas
 delimitador = "\n-----------------------------------\n"
 filename = 'word-to-txt.txt'
@@ -16,7 +17,9 @@ with open(file_name, 'w') as fileout:
             path = os.path.join(file_dir, f)
             print("Parsing file: {}".format(path))
             # Open the word
-            text = textract.process(path)
+            #text = textract.process(path)
+            # extract text
+            text = docx2txt.process("file.docx")
             # Get file name without extension
             ff = os.path.splitext(f)[0]
             # write to file
