@@ -7,7 +7,7 @@ import os
 file_dir = "."
 # Caracter separador de colunas
 delimitador = "\n-----------------------------------\n"
-filename = 'word-to-txt.txt'
+file_name = 'word-to-txt.txt'
 
 with open(file_name, 'w') as fileout:
 
