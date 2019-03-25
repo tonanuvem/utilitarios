@@ -65,7 +65,7 @@ ifile = "efds-saidas.pdf"
 ofile = "output.pdf"
 arq_num_doc_fiscal = "numeros-doc-fiscal.txt"
 palavra_inicial = "Inicial"
-palavra_final = "Digital"
+palavra_final = "Escrituração"
 
 words_list = words_load(arq_num_doc_fiscal)
 
