@@ -1,0 +1,21 @@
+> conda info --envs
+> conda activate pdf
+> python --version
+
+USAR PIP:
+For others who run into this situation, I found this to be the most straightforward solution:
+
+Run , where venv_name is the name of your virtual environment.
+> conda create -n venv_name 
+> source activate venv_name
+
+Run . This will install pip to your venv directory.
+> conda install pip
+
+Find your anaconda directory, and find the actual venv folder. 
+It should be somewhere like /anaconda/envs/venv_name/.
+
+Install new packages by doing
+> /anaconda/envs/venv_name/bin/pip install package_name.
+
+This should now successfully install packages using that virtual environment's pip!
