@@ -38,20 +38,23 @@ if __name__ == "__main__":
         # logs
         with open('log-'+file_name, 'w') as logfileout:
             # criar gasto relacionados a: Material de Escritório
-            campos = {'data': '29/01/'+ANO, 'conta': '4012', 'Historico': 'Fonte Cartao Credito: KALUNGA', 'valor': '84,80'}
-            fileout.write( campos['data']+';'+campos['conta']+';'+campos['Historico']+';'+campos['valor']+'\n' )
+            campos = {'data': '29/01/'+ANO, 'conta': '4012', 'valor': '84,80', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '','Historico': 'Fonte Cartao Credito: KALUNGA'}
+            fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
+            # criar gasto relacionados a: Material Conservação e Limpeza de Escritório
+            campos = {'data': '16/02/'+ANO, 'conta': '4011', 'valor': '171,06', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '','Historico': 'Fonte Cartao Credito: MASTER SUPERMERCADO'}
+            fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
             # criar gasto relacionados a: Anuidade do Conselho
-            campos = {'data': '05/01/'+ANO, 'conta': '4004', 'Historico': 'CREMESP', 'valor': '733,40'}
-            fileout.write( campos['data']+';'+campos['conta']+';'+campos['Historico']+';'+campos['valor']+'\n' )
+            campos = {'data': '05/01/'+ANO, 'conta': '4004', 'valor': '733,40', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '','Historico': 'CREMESP'}
+            fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
             # criar gasto relacionados a: Livros
-            campos = {'data': '19/07/'+ANO, 'conta': '4015', 'Historico': 'Fonte Cartao Credito: LIVRARIA LUANA', 'valor': '881,79'}
-            fileout.write( campos['data']+';'+campos['conta']+';'+campos['Historico']+';'+campos['valor']+'\n' )
+            campos = {'data': '19/07/'+ANO, 'conta': '4015', 'valor': '881,79', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '','Historico': 'Fonte Cartao Credito: LIVRARIA LUANA'}
+            fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
             # criar gasto relacionados a: Congressos
-            campos = {'data': '05/02/'+ANO, 'conta': '4018', 'Historico': 'CONGRESSO SBAD', 'valor': '500,00'}
-            fileout.write( campos['data']+';'+campos['conta']+';'+campos['Historico']+';'+campos['valor']+'\n' )
+            campos = {'data': '05/02/'+ANO, 'conta': '4018', 'valor': '500,00', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '', 'Historico': 'CONGRESSO SBAD'}
+            fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
             # criar os gastos mensais com propaganda e aluguel
             for mes in range(1, 13):
-                campos = {'data': '05/01/'+ANO, 'conta': '', 'valor': '0,00', 'CPFPAGOU': '', 'CPFUSOU': '', 'Historico': ''}
+                campos = {'data': '05/01/'+ANO, 'conta': '', 'valor': '0,00', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '', 'Historico': ''}
                 for conta in ['4001', '4017']:
                     campos['conta'] = conta
                     if mes < 10:
@@ -59,7 +62,7 @@ if __name__ == "__main__":
                     else:
                         campos['data'] = '05/'+str(mes)+'/'+ANO
                     if conta == '4001':
-                        campos['valor'] ='1000'
+                        campos['valor'] ='1100'
                         campos['Historico'] ='GASTO COM ALUGUEL'
                     else : #  conta == '4017':
                         campos['valor'] ='350'
