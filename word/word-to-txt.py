@@ -1,5 +1,3 @@
-#from openpyxl import load_workbook
-#import textract
 import docx2txt
 import os
 import re
@@ -44,13 +42,19 @@ if __name__ == "__main__":
             campos = {'data': '16/02/'+ANO, 'conta': '4011', 'valor': '171,06', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '','Historico': 'Fonte Cartao Credito: MASTER SUPERMERCADO'}
             fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
             # criar gasto relacionados a: Anuidade do Conselho
-            campos = {'data': '05/01/'+ANO, 'conta': '4004', 'valor': '733,40', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '','Historico': 'CREMESP'}
+            campos = {'data': '05/01/'+ANO, 'conta': '4004', 'valor': '772,50', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '','Historico': 'CREMESP'}
+            fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
+            campos = {'data': '09/09/'+ANO, 'conta': '4004', 'valor': '725,00', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '','Historico': 'SOBED'}
             fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
             # criar gasto relacionados a: Livros
             campos = {'data': '19/07/'+ANO, 'conta': '4015', 'valor': '881,79', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '','Historico': 'Fonte Cartao Credito: LIVRARIA LUANA'}
             fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
             # criar gasto relacionados a: Congressos
-            campos = {'data': '05/02/'+ANO, 'conta': '4018', 'valor': '500,00', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '', 'Historico': 'CONGRESSO SBAD'}
+            campos = {'data': '24/05/'+ANO, 'conta': '4018', 'valor': '1580,00', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '', 'Historico': 'CONGRESSO CAMPINAS 2019 : SOC MED CIRURGIA CAMPINAS BR'}
+            fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
+            campos = {'data': '22/10/'+ANO, 'conta': '4018', 'valor': '1210,00', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '', 'Historico': 'CONGRESSO SBAD : CCM SBAD 2019'}
+            fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
+            campos = {'data': '22/10/'+ANO, 'conta': '4018', 'valor': '450,00', 'CPFPAGOU': CPFDRA, 'CPFUSOU': '', 'Historico': 'CONGRESSO SBAD : CCM SBAD 2019'}
             fileout.write( campos['data']+';'+campos['conta']+';'+campos['valor']+';'+campos['CPFPAGOU']+';'+campos['CPFUSOU']+';'+campos['Historico']+'\n' )
             # criar os gastos mensais com propaganda e aluguel
             for mes in range(1, 13):
