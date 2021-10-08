@@ -2,7 +2,7 @@ boto3==1.11.12
 botocore==1.14.12
 docutils==0.15.2
 jmespath==0.9.4
-Pillow==8.1.1
+Pillow==8.3.2
 PyMuPDF==1.14.13
 python-dateutil==2.8.1
 s3transfer==0.3.3
