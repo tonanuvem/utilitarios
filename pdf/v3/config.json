@@ -1,0 +1,7 @@
+{
+    "nome_arquivo_entrada": "efds-entradas.pdf",
+    "nome_arquivo_saida": "output-entrada.pdf",
+    "nome_arquivo_destacar_texto": "entrada-numeros-doc-fiscal.txt",
+    "delimitador_palavra_inicial": "Nr.",
+    "delimitador_palavra_final": "Nome"
+}
