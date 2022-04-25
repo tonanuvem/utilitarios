@@ -2,7 +2,7 @@ Connect-MicrosoftTeams
 
 $groupid = 'fb2a5d75-bf78-4540-a8e2-8da96f0161ba'
 
-$turma = '19abd'
+$turma = 'fiap'
 $arquivo = $turma + '.csv'
 
 $labs = $turma + '-lab'
