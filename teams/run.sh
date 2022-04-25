@@ -1,0 +1,1 @@
+pwsh script.ps1
