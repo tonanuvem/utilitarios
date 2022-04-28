@@ -7,21 +7,25 @@ from pdf_split_tool import pdf_splitter
 ###
 # Funcionalidade de MERGE
 ###
-class pdfMerge():
+class PDF():
 
     @staticmethod
-    def merge(dir, ofile, maxsize=0):
-        files = [f for f in os.listdir(dir) if f.endswith(".pdf")]
+    def merge(dir, files, ofile, maxsize=10):
+        # files = [f for f in os.listdir(dir) if f.endswith(".pdf")]
         # pip install natsort
         files = natsorted(files)
         # files = sorted(files)
-        print("Diretorio: "+str(dir))
-        print("Tamanho maximo dos arquivos de saida: "+str(maxsize))
-        print("Arquivos ordenados: "+str(files))
-
+        print("merge : Diretorio: "+str(dir)+"\tTamanho maximo dos arquivos de saida: "+str(maxsize))
+        print("\tArquivos ordenados: "+str(files))
+        result = fitz.open()
+        for pdf in files:
+            with fitz.open(dir+'/'+pdf) as mfile:
+                result.insert_PDF(mfile)
+        result.save(dir+'/'+ofile)
+        '''
         # Calculando o espaço total
-        totalsize = 0
-        parte = 1
+        #totalsize = 0
+        #parte = 1
         for pdf in files:
             print(f'Processando arquivo: "{pdf}"')
             # iniciando arquivo que vai receber o resultado do merge
@@ -53,29 +57,79 @@ class pdfMerge():
                     continue
             # atingiu o tamanho total
             # salvar esse arquivo e continuar (outras partes)
-            # outra opção seria juntar tudo e depois quebrar chamando o pdfSplit()
+            # outra opção seria juntar tudo e depois quebrar chamando o sizeSplit()
             return
             result.save(dir+"/"+parte+"-"+ofile)
             parte += 1
             totalsize = 0
+        '''
         print("Arquivos juntados!")
 
 ###
-# Funcionalidade de SPLIT : POR PAGINAS ou POR TAMANHO
+# Funcionalidade de SPLIT :  POR TAMANHO ou POR PAGINAS
 ###
-class pdfSplit():
-
     @staticmethod
     def sizeSplit(filename, max_size):
-        filename = 'C:\\Users\\apsampaio\\Downloads\\4145916_1.pdf'
+        #filename = 'C:\\Users\\apsampaio\\Downloads\\4145916_1.pdf'
         print("sizeSplit : arquivo = "+ str(filename) +" , tamanho ="+ str(max_size))
-        splitter = pdf_splitter.PdfSplitter(filename)
-        splitter.split_max_size(max_size)
+        doc = fitz.open(filename)
+        # Verificar tamanho o PDF em MB
+        pdf_size = os.path.getsize(filename)/(1024*1024)
+        total_pages = len(doc)
+        avg_size = pdf_size / total_pages
+        #Transformando em MB:
+        #avg_size = avg_size/(1024*1024)
+        print("\tDocumento '%s' tem %i paginas com tamanho total %.2f MB, e com páginas de tamanho em torno de %f MB." % (doc.name,total_pages,pdf_size,avg_size))
+        # exemplo de leitura do documento
+        #for page in doc:
+        #    text = page.getText()
+        if pdf_size > max_size:
+            avg_step = int(max_size / avg_size)
+            pdfs_count = 0
+            current_page = 0
+            end_page = current_page + avg_step
+            while current_page != total_pages:
+                if end_page > total_pages:
+                    end_page = total_pages
+                incluir_paginas = str(current_page+1) + "-" + str(end_page)
+                print("\tProcessando Documento '%s' : Parte %i : pag_inicial = %i : pag_final = %i" % (doc.name,pdfs_count,current_page, end_page))
+                pages = PDF.auxiliar(incluir_paginas) # ajustar os indices começando em zero
+                print("\tProcessando Documento : intervalo = %s" % (pages))
+                #current_size = sys.maxsize
+                #gerando novo pdf
+                docout = fitz.open()
+                # get the pages
+                try : # inserir paginas
+                    outdoc = fitz.open(filename)
+                    outdoc.select(pages)                   # delete all others
+                    ofile = filename.replace(".pdf", "-{}.pdf".format(pdfs_count))
+                    outdoc.ez_save(ofile)                     # save and clean new PDF
+                    outdoc.close()
+                    # verificar se o tamanho do arquivo ainda ficou menor, e pegar menos páginas
+                    out_pdf_size = os.path.getsize(ofile)/(1024*1024)
+                    print("\tProcessando Documento : Parte %i : ficou com tamanho de %.2f MB" % (pdfs_count, out_pdf_size))
+                    if out_pdf_size > max_size:
+                        # refazer essa parte do arquivo com menos páginas (diminuir 10% da qtd de páginas)
+                        end_page = int(end_page * 0.9)
+                        print(end_page)
+                        #return
+                        continue
+                except Exception as e1: #falha na tentativa
+                    print("\t\t\t\tErro no processamento com mensagem de erro: ",str(e1))
+                #continuar o loop
+                current_page = end_page
+                end_page = current_page + avg_step
+                pdfs_count += 1
+            return pdfs_count
+        return 0
+
 
     #==============================================================================
     # Delimitadores, função auxiliar
     #==============================================================================
-    def auxiliar(self, data):
+    @staticmethod
+    def auxiliar(data):
+    #def auxiliar(self, data):
         delimiters = "\n\r\t,;"
         for d in delimiters:
             data = data.replace(d, ' ')
@@ -94,7 +148,9 @@ class pdfSplit():
                 numbers.append(int(line)-1)
         return numbers
 
-    def pageSplit(self, filename, pages):
+    @staticmethod
+    def pageSplit(filename, pages):
+    #def pageSplit(self, filename, pages):
         #dir="C:/Users/apsampaio/OneDrive - Secretaria da Fazenda e Planejamento do Estado de São Paulo/DRTC-III/ICMS/_Operação/MONITORAMENTO/142.086.828.111 - BIOEXTRA INDUSTRIA E COMERCIO EIRELI/AIIMs/2 AIIM 4.145.916-7 ref FOX/"
         dir="H:/drtc-3/drtciii-nf2/03- CCQ - EQUIPE 23/AIIM 4.145.916-7_BIOEXTRA_ref_FOX/"
 
@@ -125,7 +181,7 @@ class pdfSplit():
         # get the pages
         try : # inserir paginas
             doc.select(pages)                   # delete all others
-            doc.save(ofile)                     # save and clean new PDF
+            doc.ez_save(ofile)                     # save and clean new PDF
             doc.close()
         except Exception as e1: #falha na tentativa
             print("\t\t\t\tErro no processamento com mensagem de erro: ",str(e1))
@@ -165,7 +221,7 @@ class MyFrame(wx.Frame):
         my_sizer.Add(self.text_ctrl_ofile, 0, wx.ALL | wx.EXPAND, 5)
         # Botao para processar        
         my_btn_merge = wx.Button(panel, label='Fazer o merge dos arquivos')
-        my_btn_merge.Bind(wx.EVT_BUTTON, self.on_press_process)
+        my_btn_merge.Bind(wx.EVT_BUTTON, self.on_press_merge)
         my_sizer.Add(my_btn_merge, 0, wx.ALL | wx.CENTER, 5)
         # Tamanho do Arquivo de saida em Mb
         self.text_ctrl_size = wx.TextCtrl(panel)
@@ -233,14 +289,49 @@ class MyFrame(wx.Frame):
         # This is done by getting the path data from the dialog - BEFORE
         # we destroy it.
         if dlg.ShowModal() == wx.ID_OK:
-            #self.log.WriteText('You selected: %s\n' % dlg.GetPath())
+            #print('You selected: %s\n' % dlg.GetPath())
             self.text_ctrl_dir.ChangeValue(dlg.GetPath())
         # Only destroy a dialog after you're done with it.
         dir = self.text_ctrl_dir.GetValue()
         self.atualizarFileListCtrl(dir)
         dlg.Destroy()
 
-    def on_press_process(self, event):
+    def on_press_merge(self, event):
+        dir = self.text_ctrl_dir.GetValue()
+        if not os.path.isdir(dir):
+            print("Nenhum diretorio foi selecionado! \n: "+str(dir))
+            return
+        itemcount = self.list.GetItemCount()
+        itemschecked = [i for i in range(itemcount) if self.list.IsItemChecked(item=i)]
+        print('Processando : Merge de arquivos selecionados.')
+        #print('Qtd de arquivos disponiveis na lista: ' + str(self.list.GetItemCount())
+        print('Qtd de arquivos selecionados: '+str(len(itemschecked)))
+        print("ItemsChecked: " + str(itemschecked))
+        arquivos = []
+        for index in itemschecked:
+            item = self.list.GetItemText(index)
+            ex = self.list.GetItemText(index, col=1)
+            file = str(item)+'.'+str(ex)
+            print("\tAnalisando item: "+str(file))          
+            # Processar cada arquivo selecionado
+            arquivos.append(file)
+        if len(arquivos) <= 0:
+            print("Nenhum arquivo foi selecionado! \n: "+str(arquivos))
+            return
+        # Nome do arquivo de saida
+        ofile = self.text_ctrl_ofile.GetValue()
+        if len(ofile) <= 0:
+            print("Nome do arquivo de saida nao foi definido! \n: "+str(arquivos))
+            return
+        # Tamanho deve ser int
+        tamanho = int(self.text_ctrl_size.GetValue())
+        if tamanho < 1:
+            print("Tamanho dos arquivos deve ser maior que 1! \n: "+str(tamanho))
+            return
+        print(f'Diretorio: "{dir}" | Processando arquivos: "{arquivos}"')
+        print(f'Arquivo de saida: "{ofile}" | Tamanho Máximo: "{tamanho}"')
+        PDF.merge(dir, arquivos, ofile,tamanho)
+        '''
         dir = self.text_ctrl_dir.GetValue()
         tamanhoMax = int(self.text_ctrl_size.GetValue())
         if not os.path.isdir(dir):
@@ -249,8 +340,8 @@ class MyFrame(wx.Frame):
             ofile = self.text_ctrl_ofile.GetValue()
             #print(f'Processando diretorio: "{dir}"')
             #print(f'Arquivo de saida: "{ofile}"')
-            pdfMerge.merge(dir, ofile, tamanhoMax)
-
+            PDF.merge(dir, ofile, tamanhoMax)
+        '''
     def on_press_size(self, event):
         dir = self.text_ctrl_dir.GetValue()
         itemcount = self.list.GetItemCount()
@@ -272,7 +363,7 @@ class MyFrame(wx.Frame):
                 print("Diretorio ou arquivo invalido! \n: "+str(arquivo))
             else:
                 print(f'Processando arquivo: "{arquivo}"')
-                pdfSplit.sizeSplit(arquivo, tamanho)
+                PDF.sizeSplit(arquivo, tamanho)
 
 if __name__ == '__main__':
     app = wx.App()
