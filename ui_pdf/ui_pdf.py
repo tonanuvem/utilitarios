@@ -1,8 +1,41 @@
 #!/usr/bin/env python
 
+# TODOs:
+# - inserir os botões (mover para cima ou para baixo) para reajustar a ordem dos arquivos exibidos
+# - inserir ProgressDialog ao clicar em juntar PDFs ou separar PDFs.
+# - inserir a configuracao em json(ex: ultimo diretorio escolhido) 
+# - fazer um interface gráfica para o PDF Highlight
+# OK - inserir a opcao de excluir paginas de um PDF
+# OK - inserir visualizador de PDF
+
 import os, wx, fitz, time, math
 from natsort import natsorted
-from pdf_split_tool import pdf_splitter
+import json, sys
+#from pdf_split_tool import pdf_splitter
+
+import wx.lib.sized_controls as sc
+from wx.lib.pdfviewer import pdfViewer, pdfButtonPanel
+
+###
+# Funcionalidade de PDF VIEWER dentro da UI
+###
+class PDFViewer(sc.SizedFrame):
+    def __init__(self, parent, **kwds):
+        super(PDFViewer, self).__init__(parent, **kwds)
+
+        paneCont = self.GetContentsPane()
+        self.buttonpanel = pdfButtonPanel(paneCont, wx.NewId(),
+                                wx.DefaultPosition, wx.DefaultSize, 0)
+        self.buttonpanel.SetSizerProps(expand=True)
+        self.viewer = pdfViewer(paneCont, wx.NewId(), wx.DefaultPosition,
+                                wx.DefaultSize,
+                                wx.HSCROLL|wx.VSCROLL|wx.SUNKEN_BORDER)
+        self.viewer.UsePrintDirect = False
+        self.viewer.SetSizerProps(expand=True, proportion=1)
+
+        # introduce buttonpanel and viewer to each other
+        self.buttonpanel.viewer = self.viewer
+        self.viewer.buttonpanel = self.buttonpanel
 
 ###
 # Funcionalidade de MERGE
@@ -38,7 +71,6 @@ class PDF():
 ###
     @staticmethod
     def sizeSplit(filename, max_size):
-        #filename = 'C:\\Users\\apsampaio\\Downloads\\4145916_1.pdf'
         print("sizeSplit : arquivo = "+ str(filename) +" , tamanho ="+ str(max_size))
         doc = fitz.open(filename)
         # Verificar tamanho o PDF em MB
@@ -106,10 +138,11 @@ class PDF():
 
     #==============================================================================
     # Delimitadores, função auxiliar
+    # Input: recebe as páginas iniciando em 1 (como o usuario ve o doc)
+    # Retorno: lista de paginas iniciando em 0 (como o fitz ve o doc)
     #==============================================================================
     @staticmethod
     def auxiliar(data):
-    #def auxiliar(self, data):
         delimiters = "\n\r\t,;"
         for d in delimiters:
             data = data.replace(d, ' ')
@@ -129,42 +162,30 @@ class PDF():
         return numbers
 
     @staticmethod
-    def pageSplit(filename, pages):
-    #def pageSplit(self, filename, pages):
-        #dir="C:/Users/apsampaio/OneDrive - Secretaria da Fazenda e Planejamento do Estado de São Paulo/DRTC-III/ICMS/_Operação/MONITORAMENTO/142.086.828.111 - BIOEXTRA INDUSTRIA E COMERCIO EIRELI/AIIMs/2 AIIM 4.145.916-7 ref FOX/"
-        dir="H:/drtc-3/drtciii-nf2/03- CCQ - EQUIPE 23/AIIM 4.145.916-7_BIOEXTRA_ref_FOX/"
+    def pageSplit(filename, pages, ofile):
+        print("pageSplit : arquivo = "+filename+"\n paginas a serem excluidas: " + pages+"\n arquivo de saida : "+ofile)
 
-        fileInput="prova7_SFPPRC202104143V01-parte2.pdf"
-
-        #incluir_paginas = "1-40; 43-44; 46-49"
-        incluir_paginas = "1-3; 5-33"
-
-        ifile=dir+fileInput
-        ofile=dir+"selecao_"+fileInput
-        # paths longos dao problema -> copiar para o M: ou H:
-        #ofile=dir+"paginas_"+str(paginaInicial)+"_"+str(paginaFinal)+"_"+fileInput
-
-        doc = fitz.open(ifile)
-        pages = auxiliar(incluir_paginas) # ajustar os indices começando em zero
-
-        # exemplo de leitura de texto do documento
-        #for page in doc:
-        #    text = page.getText()
+        doc = fitz.open(filename)
+        excluir_paginas = PDF.auxiliar(pages) # ajustar os indices começando em zero
+        incluir_paginas = range(len(doc))
+        pages = set(incluir_paginas) - set(excluir_paginas)
 
         print("\tDocumento '%s' tem %i paginass." % (doc.name, len(doc)))
-
-        print("\t %i Paginas que vao ficar no documento: %s" % (len(pages), str(pages)))
+        print("\t %i Paginas que serao EXCLUIDAS no documento: %s" % (len(excluir_paginas), str(excluir_paginas)))
+        print("\t %i Paginas que VAO FICAR no documento: %s" % (len(pages), str(pages)))
 
         #gerando novo pdf
         docout = fitz.open()
 
         # get the pages
         try : # inserir paginas
-            doc.select(pages)                   # delete all others
+            doc.select(list(pages))                   # delete all others
             doc.ez_save(ofile)                     # save and clean new PDF
             doc.close()
+            return len(excluir_paginas)
         except Exception as e1: #falha na tentativa
-            print("\t\t\t\tErro no processamento com mensagem de erro: ",str(e1))
+            print("\t\tErro no processamento com mensagem de erro: ",str(e1))
+            return 0
 
 ###
 # Interface grafica
@@ -172,24 +193,42 @@ class PDF():
 class MyFrame(wx.Frame):    
     def __init__(self):
         # Init de componentes
-        super().__init__(parent=None, title='SEFAZ PDF Utils')
+        super().__init__(parent=None, title='SEFAZ PDF Utils', size=(400,550))
         panel = wx.Panel(self)        
         my_sizer = wx.BoxSizer(wx.VERTICAL)
         # Lista de arquivos
-        #self.list = CheckListCtrl(panel)
         self.list = wx.ListCtrl(panel, size=(300,180), style=wx.LC_REPORT)
         self.list.EnableCheckBoxes()
+        self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.on_doubleclick_list)
         my_sizer.Add(self.list, 0, wx.EXPAND)
         # Descreve o tamanho total
         self.text_total_size = wx.TextCtrl(panel, style=wx.TE_READONLY | wx.TE_CENTRE)
         #self.text_ctrl_size.AppendText("Tamanho estimado (soma dos arquivos) = "+ str(f'{tamanhoTotal/(1024*1024):.2f}') +" MBs")
         my_sizer.Add(self.text_total_size, 0, wx.ALL | wx.EXPAND, 5)
         # Atualiza a Lista de arquivos e o campo com o tamanho total
-        self.atualizarFileListCtrl(diretorio='.')
-        #self.splitter = wx.SplitterWindow(self, ID_SPLITTER, style=wx.SP_BORDER)
+        # ler configuracao do arquivo json
+        self.arquivo_config = "config.json"
+        self.dados = dict()
+        try:
+            with open(self.arquivo_config) as jsonFile:
+                self.dados = json.load(jsonFile)
+                jsonFile.close()
+            if len(self.dados) > 0:
+                idir = str(self.dados['diretorio_selecionado'])
+                self.atualizarFileListCtrl(diretorio=idir)
+            else:
+                self.atualizarFileListCtrl(diretorio='.')
+        except Exception as e1: #falha
+            print("\tErro o carregar arquivo config.json: ",str(e1))
+            self.dados['diretorio_selecionado'] = '.' 
+            self.atualizarFileListCtrl(diretorio='.')
         # Diretorio selecionado
         self.text_ctrl_dir = wx.TextCtrl(panel, style=wx.TE_READONLY)
-        self.text_ctrl_dir.AppendText("Clique no botão abaixo para selecionar um diretorio")
+        if len(self.dados) > 0:
+            idir = str(self.dados['diretorio_selecionado'])
+            self.text_ctrl_dir.AppendText(idir)
+        else:
+            self.text_ctrl_dir.AppendText("Clique no botão abaixo para selecionar um diretorio")
         my_sizer.Add(self.text_ctrl_dir, 0, wx.ALL | wx.EXPAND, 5)
         # Botao para selecionar Dir
         my_btn_dir = wx.Button(panel, label='Mudar diretorio')
@@ -211,6 +250,14 @@ class MyFrame(wx.Frame):
         my_btn_size = wx.Button(panel, label='Gerar arquivos com tamanhos máximos em MB.')
         my_btn_size.Bind(wx.EVT_BUTTON, self.on_press_size)
         my_sizer.Add(my_btn_size, 0, wx.ALL | wx.CENTER, 5)
+        # Excluir páginas do PDF
+        self.text_ctrl_delete = wx.TextCtrl(panel)
+        self.text_ctrl_delete.AppendText("2-7")
+        my_sizer.Add(self.text_ctrl_delete, 0, wx.ALL | wx.EXPAND, 5)
+        # Botao para processar        
+        my_btn_delete = wx.Button(panel, label='Deletar páginas do intervalo selecionado')
+        my_btn_delete.Bind(wx.EVT_BUTTON, self.on_press_delete)
+        my_sizer.Add(my_btn_delete, 0, wx.ALL | wx.CENTER, 5)
         # Atualizar tela
         #size = wx.DisplaySize()
         #self.SetSize(size)
@@ -258,8 +305,18 @@ class MyFrame(wx.Frame):
 # Classe: MyFrame
 # Eventos ao clicar nos botoes da Interface grafica
 ###
+    def on_doubleclick_list(self, event):
+        select = self.list.GetItemText(event.Index)
+        print("Capturado duplo click : "+str(select))
+        #wx.MessageBox('Selecionado item %s' % str(select))
+        pdfV = PDFViewer(self, size=(800, 600))
+        dir = self.text_ctrl_dir.GetValue()
+        filepath = str(dir)+'/'+str(select)+'.pdf'
+        print("Tentando abrir PDF Viewer para : "+str(filepath))
+        pdfV.viewer.LoadFile(filepath)
+        pdfV.Show()
+
     def on_press_dir(self, event):
-        # In this case we include a "New directory" button.
         dlg = wx.DirDialog(self, "Escolha o diretorio:",
                           style=wx.DD_DEFAULT_STYLE
                            #| wx.DD_DIR_MUST_EXIST
@@ -274,6 +331,14 @@ class MyFrame(wx.Frame):
         # Only destroy a dialog after you're done with it.
         dir = self.text_ctrl_dir.GetValue()
         self.atualizarFileListCtrl(dir)
+        # salvar novo diretorio no arquivo de configuracao json
+        self.dados['diretorio_selecionado'] = dir
+        print(self.dados)
+        with open(self.arquivo_config, "w") as jsonFile:
+            configJSON = json.dumps(self.dados)
+            jsonFile.write(configJSON)
+            jsonFile.close()
+        # retirar janela que pergunta o dir
         dlg.Destroy()
 
     def on_press_merge(self, event):
@@ -353,6 +418,63 @@ class MyFrame(wx.Frame):
                                 )
                     dlg.ShowModal()
                     dlg.Destroy()
+        self.atualizarFileListCtrl(dir)
+
+    def on_press_delete(self, event):
+        dir = self.text_ctrl_dir.GetValue()
+        itemcount = self.list.GetItemCount()
+        itemschecked = [i for i in range(itemcount) if self.list.IsItemChecked(item=i)]
+        print('Processando exclusão de páginas do intervalo.')
+        #print('Qtd de arquivos disponiveis na lista: ' + str(self.list.GetItemCount())
+        print('Qtd de arquivos selecionados: '+str(len(itemschecked)))
+        print("ItemsChecked: " + str(itemschecked))
+        for index in itemschecked:
+            item = self.list.GetItemText(index)
+            ex = self.list.GetItemText(index, col=1)
+            file = str(item)+'.'+str(ex)
+            print("\tAnalisando item: "+str(file))          
+            # Processar cada arquivo selecionado
+            arquivo = dir+"/"+file
+            # Excluindo paginas do intervalo
+            excluir_paginas = self.text_ctrl_delete.GetValue()
+            if len(excluir_paginas) <= 0:
+                print("Intervalo das páginas a serem excluidas dos arquivos nao foi definido! \n: "+str(excluir_paginas))
+                return
+            # Nome do arquivo de saida
+            ofile = self.text_ctrl_ofile.GetValue()
+            output_arquivo = dir+"/"+ofile
+            if len(ofile) <= 0:
+                print("Nome do arquivo de saida nao foi definido! \n: "+str(ofile))
+                return
+            resposta = PDF.pageSplit(arquivo, excluir_paginas, output_arquivo)
+            # Dialog de resposta
+            if resposta > 0:
+                dlg = wx.MessageDialog(self, 'Paginas excluidas com sucesso: '+str(resposta)+ '\nCliquer para continuar e verificar o tamanho maximo',
+                            'Excluir paginas',
+                            wx.OK | wx.ICON_INFORMATION
+                            #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                            )
+                dlg.ShowModal()
+                dlg.Destroy()
+            # Depois processar para verificar tamanho maximo
+            # Tamanho deve ser int
+            '''
+            tamanho = int(self.text_ctrl_size.GetValue())
+            if not ( os.path.isdir(dir) or os.path.isfile(arquivo) ):
+                print("Diretorio ou arquivo invalido! \n: "+str(arquivo))
+            else:
+                print(f'Processando arquivo: "{arquivo}"')
+                resposta = PDF.sizeSplit(arquivo, tamanho)
+                # Dialog de resposta
+                if resposta > 0:
+                    dlg = wx.MessageDialog(self, 'Arquivos separados com sucesso: '+str(resposta),
+                                'Separar Arquivos',
+                                wx.OK | wx.ICON_INFORMATION
+                                #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+            '''
         self.atualizarFileListCtrl(dir)
 
 if __name__ == '__main__':
