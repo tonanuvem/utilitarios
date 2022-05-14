@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 # TODOs:
-# - inserir os botões (mover para cima ou para baixo) para reajustar a ordem dos arquivos exibidos
-# - inserir ProgressDialog ao clicar em juntar PDFs ou separar PDFs.
-# - inserir a configuracao em json(ex: ultimo diretorio escolhido) 
+# - inserir ProgressDialog ao clicar em cada um dos botoes (ex: juntar PDFs ou separar PDFs).
 # - fazer um interface gráfica para o PDF Highlight
 # OK - inserir a opcao de excluir paginas de um PDF
 # OK - inserir visualizador de PDF
+# OK - inserir a configuracao em json(ex: ultimo diretorio escolhido) 
+# OK - inserir os botões (mover para cima ou para baixo) para reajustar a ordem dos arquivos exibidos
 
 import os, wx, fitz, time, math
 from natsort import natsorted
@@ -48,7 +48,7 @@ class PDF():
         if len(files) > 0:
             # files = [f for f in os.listdir(dir) if f.endswith(".pdf")]
             # pip install natsort
-            files = natsorted(files)
+            # files = natsorted(files)
             # files = sorted(files)
             print("merge : Diretorio: "+str(dir)+"\tTamanho maximo dos arquivos de saida: "+str(maxsize))
             print("\tArquivos ordenados: "+str(files))
@@ -71,6 +71,7 @@ class PDF():
 ###
     @staticmethod
     def sizeSplit(filename, max_size):
+        #filename = 'C:\\Users\\apsampaio\\Downloads\\4145916_1.pdf'
         print("sizeSplit : arquivo = "+ str(filename) +" , tamanho ="+ str(max_size))
         doc = fitz.open(filename)
         # Verificar tamanho o PDF em MB
@@ -143,6 +144,7 @@ class PDF():
     #==============================================================================
     @staticmethod
     def auxiliar(data):
+    #def auxiliar(self, data):
         delimiters = "\n\r\t,;"
         for d in delimiters:
             data = data.replace(d, ' ')
@@ -163,12 +165,31 @@ class PDF():
 
     @staticmethod
     def pageSplit(filename, pages, ofile):
+    #def pageSplit(self, filename, pages):
+        #dir="C:/Users/apsampaio/OneDrive - Secretaria da Fazenda e Planejamento do Estado de São Paulo/DRTC-III/ICMS/_Operação/MONITORAMENTO/142.086.828.111 - BIOEXTRA INDUSTRIA E COMERCIO EIRELI/AIIMs/2 AIIM 4.145.916-7 ref FOX/"
+        #dir="H:/drtc-3/drtciii-nf2/03- CCQ - EQUIPE 23/AIIM 4.145.916-7_BIOEXTRA_ref_FOX/"
+
+        #fileInput="prova7_SFPPRC202104143V01-parte2.pdf"
+
+        # exemplos:
+        #incluir_paginas = "1-40; 43-44; 46-49"
+        #excluir_paginas = "1-3; 5-33" 
+
+        #ifile=dir+fileInput
+        #ofile=dir+"selecao_"+fileInput
+        
+        # paths longos dao problema -> copiar para o M: ou H:
+        #ofile=dir+"paginas_"+str(paginaInicial)+"_"+str(paginaFinal)+"_"+fileInput
         print("pageSplit : arquivo = "+filename+"\n paginas a serem excluidas: " + pages+"\n arquivo de saida : "+ofile)
 
         doc = fitz.open(filename)
         excluir_paginas = PDF.auxiliar(pages) # ajustar os indices começando em zero
         incluir_paginas = range(len(doc))
         pages = set(incluir_paginas) - set(excluir_paginas)
+
+        # exemplo de leitura de texto do documento
+        #for page in doc:
+        #    text = page.getText()
 
         print("\tDocumento '%s' tem %i paginass." % (doc.name, len(doc)))
         print("\t %i Paginas que serao EXCLUIDAS no documento: %s" % (len(excluir_paginas), str(excluir_paginas)))
@@ -190,21 +211,55 @@ class PDF():
 ###
 # Interface grafica
 ###
-class MyFrame(wx.Frame):    
+class AppFrame(wx.Frame):    
     def __init__(self):
         # Init de componentes
-        super().__init__(parent=None, title='SEFAZ PDF Utils', size=(400,550))
+        super().__init__(parent=None, title='SEFAZ PDF Utils', size=(530,550))
         panel = wx.Panel(self)        
-        my_sizer = wx.BoxSizer(wx.VERTICAL)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        #------------
         # Lista de arquivos
+        #------------
         self.list = wx.ListCtrl(panel, size=(300,180), style=wx.LC_REPORT)
         self.list.EnableCheckBoxes()
+        # Evento: Botao direito na Lista abre o PDF Viewer
         self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.on_doubleclick_list)
-        my_sizer.Add(self.list, 0, wx.EXPAND)
-        # Descreve o tamanho total
+        # Adicionar componente na UI
+        vbox.Add(self.list, 0, wx.EXPAND)
+
+        #------------
+        # Texto que descreve o tamanho total
+        #------------
         self.text_total_size = wx.TextCtrl(panel, style=wx.TE_READONLY | wx.TE_CENTRE)
         #self.text_ctrl_size.AppendText("Tamanho estimado (soma dos arquivos) = "+ str(f'{tamanhoTotal/(1024*1024):.2f}') +" MBs")
-        my_sizer.Add(self.text_total_size, 0, wx.ALL | wx.EXPAND, 5)
+        vbox.Add(self.text_total_size, 0, wx.ALL | wx.EXPAND, 5)
+
+        #------------
+        # Botao para mudar arquivos de posição na lista : Up ou Down + Select All ou Deselect All
+        #------------
+        hbox_pos = wx.BoxSizer(wx.HORIZONTAL)
+        btn_pos_up = wx.Button(panel, label='Up')
+        btn_pos_up.Bind(wx.EVT_BUTTON, self.on_press_up)
+        hbox_pos.Add(btn_pos_up)
+        btn_pos_down = wx.Button(panel, label='Down')
+        btn_pos_down.Bind(wx.EVT_BUTTON, self.on_press_down)
+        hbox_pos.Add(btn_pos_down)
+        btn_pos_select_all = wx.Button(panel, label='Selecionar Todos')
+        btn_pos_select_all.Bind(wx.EVT_BUTTON, self.on_press_select_all)
+        hbox_pos.Add(btn_pos_select_all)
+        btn_pos_select_clear = wx.Button(panel, label='Limpar seleção')
+        btn_pos_select_clear.Bind(wx.EVT_BUTTON, self.on_press_select_clear)
+        hbox_pos.Add(btn_pos_select_clear)
+        vbox.Add(hbox_pos, flag=wx.CENTER)
+
+        #------------
+        # Linha separadora
+        #------------
+
+        #------------
+        # Diretorio selecionado
+        #------------
         # Atualiza a Lista de arquivos e o campo com o tamanho total
         # ler configuracao do arquivo json
         self.arquivo_config = "config.json"
@@ -222,48 +277,73 @@ class MyFrame(wx.Frame):
             print("\tErro o carregar arquivo config.json: ",str(e1))
             self.dados['diretorio_selecionado'] = '.' 
             self.atualizarFileListCtrl(diretorio='.')
-        # Diretorio selecionado
+        # Texto do Diretorio selecionado
         self.text_ctrl_dir = wx.TextCtrl(panel, style=wx.TE_READONLY)
         if len(self.dados) > 0:
             idir = str(self.dados['diretorio_selecionado'])
             self.text_ctrl_dir.AppendText(idir)
         else:
             self.text_ctrl_dir.AppendText("Clique no botão abaixo para selecionar um diretorio")
-        my_sizer.Add(self.text_ctrl_dir, 0, wx.ALL | wx.EXPAND, 5)
+        vbox.Add(self.text_ctrl_dir, 0, wx.ALL | wx.EXPAND, 5)
+
+        #------------
         # Botao para selecionar Dir
+        #------------
         my_btn_dir = wx.Button(panel, label='Mudar diretorio')
         my_btn_dir.Bind(wx.EVT_BUTTON, self.on_press_dir)
-        my_sizer.Add(my_btn_dir, 0, wx.ALL | wx.CENTER, 5)
+        vbox.Add(my_btn_dir, 0, wx.ALL | wx.CENTER, 5)
+
+        #------------
         # Nome do Arquivo de saida
+        #------------
         self.text_ctrl_ofile = wx.TextCtrl(panel)
         self.text_ctrl_ofile.AppendText("_output.pdf")
-        my_sizer.Add(self.text_ctrl_ofile, 0, wx.ALL | wx.EXPAND, 5)
-        # Botao para processar        
+        vbox.Add(self.text_ctrl_ofile, 0, wx.ALL | wx.EXPAND, 5)
+
+        #------------
+        # Botao para processar
+        #------------        
         my_btn_merge = wx.Button(panel, label='Fazer o merge dos arquivos')
         my_btn_merge.Bind(wx.EVT_BUTTON, self.on_press_merge)
-        my_sizer.Add(my_btn_merge, 0, wx.ALL | wx.CENTER, 5)
+        vbox.Add(my_btn_merge, 0, wx.ALL | wx.CENTER, 5)
+
+        #------------
         # Tamanho do Arquivo de saida em Mb
+        #------------
         self.text_ctrl_size = wx.TextCtrl(panel)
         self.text_ctrl_size.AppendText("10")
-        my_sizer.Add(self.text_ctrl_size, 0, wx.ALL | wx.EXPAND, 5)
-        # Botao para processar        
+        vbox.Add(self.text_ctrl_size, 0, wx.ALL | wx.EXPAND, 5)
+
+        #------------
+        # Botao para processar
+        #------------        
         my_btn_size = wx.Button(panel, label='Gerar arquivos com tamanhos máximos em MB.')
         my_btn_size.Bind(wx.EVT_BUTTON, self.on_press_size)
-        my_sizer.Add(my_btn_size, 0, wx.ALL | wx.CENTER, 5)
+        vbox.Add(my_btn_size, 0, wx.ALL | wx.CENTER, 5)
+
+        #------------
         # Excluir páginas do PDF
+        #------------
         self.text_ctrl_delete = wx.TextCtrl(panel)
         self.text_ctrl_delete.AppendText("2-7")
-        my_sizer.Add(self.text_ctrl_delete, 0, wx.ALL | wx.EXPAND, 5)
-        # Botao para processar        
+        vbox.Add(self.text_ctrl_delete, 0, wx.ALL | wx.EXPAND, 5)
+        #------------
+        # Botao para processar a Exclusão de páginas
+        #------------    
         my_btn_delete = wx.Button(panel, label='Deletar páginas do intervalo selecionado')
         my_btn_delete.Bind(wx.EVT_BUTTON, self.on_press_delete)
-        my_sizer.Add(my_btn_delete, 0, wx.ALL | wx.CENTER, 5)
+        vbox.Add(my_btn_delete, 0, wx.ALL | wx.CENTER, 5)
+        
+        #------------
         # Atualizar tela
-        #size = wx.DisplaySize()
-        #self.SetSize(size)
-        panel.SetSizer(my_sizer)        
+        #------------
+        panel.SetSizer(vbox)        
         self.Show()
 
+###
+# Classe: AppFrame
+# Método para atualizar os arquivos do Diretorio selecionado
+###
     def atualizarFileListCtrl(self, diretorio):
         j = 0
         totalsize = 0
@@ -273,13 +353,14 @@ class MyFrame(wx.Frame):
         self.list.InsertColumn(1, 'Extensão')
         self.list.InsertColumn(2, 'Tamanho', wx.LIST_FORMAT_RIGHT)
         self.list.InsertColumn(3, 'Data motificação')
-        self.list.SetColumnWidth(0, 120)
+        self.list.SetColumnWidth(0, 250)
         self.list.SetColumnWidth(1, 60)
         self.list.SetColumnWidth(2, 70)
         self.list.SetColumnWidth(3, 110)
         #self.list.InsertItem(0, '..')
         # Exibir arquivos
         files = os.listdir(diretorio)
+        files = natsorted(files)
         for i in files:
             (name, ext) = os.path.splitext(i)
             ex = ext[1:]
@@ -302,21 +383,127 @@ class MyFrame(wx.Frame):
             self.text_total_size.SetValue("Tamanho estimado (soma dos arquivos) = "+ str(f'{totalsize/(1024*1024):.2f}') +" MBs")
 
 ###
-# Classe: MyFrame
-# Eventos ao clicar nos botoes da Interface grafica
+# Classe: AppFrame
+# Eventos ao clicar com botão direito na lista de arquivos da Interface grafica
 ###
     def on_doubleclick_list(self, event):
         select = self.list.GetItemText(event.Index)
         print("Capturado duplo click : "+str(select))
         #wx.MessageBox('Selecionado item %s' % str(select))
         pdfV = PDFViewer(self, size=(800, 600))
+        #pdfV.viewer.UsePrintDirect = False
         dir = self.text_ctrl_dir.GetValue()
         filepath = str(dir)+'/'+str(select)+'.pdf'
         print("Tentando abrir PDF Viewer para : "+str(filepath))
+        #pdfV.viewer.LoadFile(r'a path to a .pdf file')
         pdfV.viewer.LoadFile(filepath)
         pdfV.Show()
 
+###
+# Classe: AppFrame
+# Eventos relacionados ao Drag and Drop da lista de arquivos da Interface grafica
+# Código fonte: https://wiki.wxpython.org/How%20to%20create%20a%20list%20control%20with%20drag%20and%20drop%20%28Phoenix%29
+###
+    def on_press_up(self, event):
+        itemcount = self.list.GetItemCount()
+        itemschecked = [i for i in range(itemcount) if self.list.IsItemChecked(item=i)]
+        print('Processando : Mudar posição UP de arquivo selecionado.')
+        #print('Qtd de arquivos disponiveis na lista: ' + str(self.list.GetItemCount())
+        print('Qtd de arquivos selecionados: '+str(len(itemschecked)))
+        print("ItemsChecked: " + str(itemschecked))
+        for i in itemschecked:
+            if i == 0: 
+                print("\tPrimeiro item não pode subir mais")
+                continue
+            else:
+                print("\tTrocar a posição "+str(i)+" com o anterior "+str(i-1))
+                # salva os valores do elemento anterior
+                nome1 = self.list.GetItemText(i-1)
+                ex1 = self.list.GetItemText(i-1, col=1)
+                tamanho1 = self.list.GetItemText(i-1, col=2)
+                data1 = self.list.GetItemText(i-1, col=3)
+                # salva os valores do elemento posterior
+                nome2 = self.list.GetItemText(i)
+                ex2 = self.list.GetItemText(i, col=1)
+                tamanho2 = self.list.GetItemText(i, col=2)
+                data2 = self.list.GetItemText(i, col=3)
+                # reescreve anterior
+                self.list.SetItem(i-1, 0, nome2)
+                self.list.SetItem(i-1, 1, ex2)
+                self.list.SetItem(i-1, 2, tamanho2)
+                self.list.SetItem(i-1, 3, data2)
+                # reescreve posterior
+                self.list.SetItem(i, 0, nome1)
+                self.list.SetItem(i, 1, ex1)
+                self.list.SetItem(i, 2, tamanho1)
+                self.list.SetItem(i, 3, data1)
+                # ajusta itens selecionados
+                self.list.CheckItem(i-1,True)
+                self.list.CheckItem(i,False)
+
+    def on_press_down(self, event):
+        itemcount = self.list.GetItemCount()
+        itemschecked = [i for i in range(itemcount) if self.list.IsItemChecked(item=i)]
+        print('Processando : Mudar posição DOWN de arquivo selecionado.')
+        #print('Qtd de arquivos disponiveis na lista: ' + str(self.list.GetItemCount())
+        print('Qtd de arquivos selecionados: '+str(len(itemschecked)))
+        print("ItemsChecked: " + str(itemschecked))
+        for i in itemschecked:
+            if i == itemcount-1: 
+                print("\tUltimo item não pode descer mais")
+                continue
+            else:
+                print("\tTrocar a posição "+str(i)+" com o posterior "+str(i+1))
+                # salva os valores do elemento anterior
+                nome1 = self.list.GetItemText(i+1)
+                ex1 = self.list.GetItemText(i+1, col=1)
+                tamanho1 = self.list.GetItemText(i+1, col=2)
+                data1 = self.list.GetItemText(i+1, col=3)
+                # salva os valores do elemento posterior
+                nome2 = self.list.GetItemText(i)
+                ex2 = self.list.GetItemText(i, col=1)
+                tamanho2 = self.list.GetItemText(i, col=2)
+                data2 = self.list.GetItemText(i, col=3)
+                # reescreve anterior
+                self.list.SetItem(i+1, 0, nome2)
+                self.list.SetItem(i+1, 1, ex2)
+                self.list.SetItem(i+1, 2, tamanho2)
+                self.list.SetItem(i+1, 3, data2)
+                # reescreve posterior
+                self.list.SetItem(i, 0, nome1)
+                self.list.SetItem(i, 1, ex1)
+                self.list.SetItem(i, 2, tamanho1)
+                self.list.SetItem(i, 3, data1)
+                # ajusta itens selecionados
+                self.list.CheckItem(i+1,True)
+                self.list.CheckItem(i,False)
+
+    def on_press_select_all(self, event):
+        itemcount = self.list.GetItemCount()
+        itemschecked = [i for i in range(itemcount) if self.list.IsItemChecked(item=i)]
+        print('Processando : Selecionar todos os arquivo.')
+        #print('Qtd de arquivos disponiveis na lista: ' + str(self.list.GetItemCount())
+        print('Qtd de arquivos selecionados: '+str(len(itemschecked)))
+        print("ItemsChecked: " + str(itemschecked))
+        for i in range(itemcount):
+            self.list.CheckItem(i,True)
+
+    def on_press_select_clear(self, event):
+        itemcount = self.list.GetItemCount()
+        itemschecked = [i for i in range(itemcount) if self.list.IsItemChecked(item=i)]
+        print('Processando : Limpar seleção de todos os arquivo.')
+        #print('Qtd de arquivos disponiveis na lista: ' + str(self.list.GetItemCount())
+        print('Qtd de arquivos selecionados: '+str(len(itemschecked)))
+        print("ItemsChecked: " + str(itemschecked))
+        for i in range(itemcount):
+            self.list.CheckItem(i,False)
+
+###
+# Classe: AppFrame
+# Eventos ao clicar nos botoes da Interface grafica
+###
     def on_press_dir(self, event):
+        # In this case we include a "New directory" button.
         dlg = wx.DirDialog(self, "Escolha o diretorio:",
                           style=wx.DD_DEFAULT_STYLE
                            #| wx.DD_DIR_MUST_EXIST
@@ -479,5 +666,5 @@ class MyFrame(wx.Frame):
 
 if __name__ == '__main__':
     app = wx.App()
-    frame = MyFrame()
+    frame = AppFrame()
     app.MainLoop()
