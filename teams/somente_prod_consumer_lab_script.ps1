@@ -8,7 +8,7 @@ Connect-MicrosoftTeams
 # 2022a - Hands-On - Prof. Andre
 #$groupid = 'fb2a5d75-bf78-4540-a8e2-8da96f0161ba'
 
-# MBA (Remoto) - Hands-On - Prof. Andre
+# MBA - Hands-On - Prof. Andre
 $groupid = '8cf1d42e-933f-4b80-9131-bb37825418c5'
 
 # 2023 - Hands-On - Prof. Andre
@@ -20,8 +20,8 @@ $arquivo = $turma + '.csv'
 $labs = $turma + '-lab'
 $produtor = $labs + '-produtor'
 $consumidor = $labs + '-consumidor'
-$monitoracao = $labs + '-monitoracao'
-$webhook = $labs + '-webhook'
+#$monitoracao = $labs + '-monitoracao'
+#$webhook = $labs + '-webhook'
 
 Write-Host 'Importando arquivo CSV para adicionar os usuarios'
 
@@ -32,8 +32,8 @@ Write-Host 'Criando canais'
 New-TeamChannel -GroupId $groupid -DisplayName $labs -MembershipType Private
 New-TeamChannel -GroupId $groupid -DisplayName $produtor -MembershipType Private
 New-TeamChannel -GroupId $groupid -DisplayName $consumidor -MembershipType Private
-New-TeamChannel -GroupId $groupid -DisplayName $monitoracao -MembershipType Private
-New-TeamChannel -GroupId $groupid -DisplayName $webhook -MembershipType Private
+#New-TeamChannel -GroupId $groupid -DisplayName $monitoracao -MembershipType Private
+#New-TeamChannel -GroupId $groupid -DisplayName $webhook -MembershipType Private
 
 # Get-TeamChannel -GroupId $groupid
 
@@ -42,7 +42,7 @@ Write-Host 'Adicionando usuarios aos canais'
 Import-Csv -Path $arquivo | foreach{Add-TeamChannelUser -GroupId $groupid -DisplayName $labs -user $_.email}
 Import-Csv -Path $arquivo | foreach{Add-TeamChannelUser -GroupId $groupid -DisplayName $produtor -user $_.email}
 Import-Csv -Path $arquivo | foreach{Add-TeamChannelUser -GroupId $groupid -DisplayName $consumidor -user $_.email}
-Import-Csv -Path $arquivo | foreach{Add-TeamChannelUser -GroupId $groupid -DisplayName $monitoracao -user $_.email}
-Import-Csv -Path $arquivo | foreach{Add-TeamChannelUser -GroupId $groupid -DisplayName $webhook -user $_.email}
+#Import-Csv -Path $arquivo | foreach{Add-TeamChannelUser -GroupId $groupid -DisplayName $monitoracao -user $_.email}
+#Import-Csv -Path $arquivo | foreach{Add-TeamChannelUser -GroupId $groupid -DisplayName $webhook -user $_.email}
 
 Write-Host 'FIM !!'
